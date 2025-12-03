@@ -11,7 +11,6 @@ import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Category from './pages/Category';
 import Search from './pages/Search';
-import './App.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

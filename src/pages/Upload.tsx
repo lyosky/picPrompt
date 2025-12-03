@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Upload, Button, Form, Input, Select, Switch, message } from 'antd';
 import { InboxOutlined, PictureOutlined } from '@ant-design/icons';
-import type { UploadFile } from 'antd/es/upload';
+import type { UploadFile, UploadProps } from 'antd/es/upload';
 import { useNavigate } from 'react-router-dom';
 import { createImage } from '../services/imageService';
 import { getCategories } from '../services/categoryService';
@@ -50,21 +50,25 @@ export default function UploadPage() {
     }
   };
 
-  const props = {
+  const props: UploadProps = {
     fileList,
-    beforeUpload: (file: File) => {
-      const isImage = file.type.startsWith('image/');
-      if (!isImage) {
-        message.error('只能上传图片文件!');
-        return false;
+    beforeUpload: () => false,
+    onChange: ({ fileList }) => {
+      // 仅保留首个文件
+      const list = fileList.slice(0, 1);
+      // 简单校验类型与大小
+      const f = list[0]?.originFileObj as File | undefined;
+      if (f) {
+        if (!f.type?.startsWith('image/')) {
+          message.error('只能上传图片文件!');
+          return;
+        }
+        if (f.size / 1024 / 1024 >= 5) {
+          message.error('图片大小不能超过 5MB!');
+          return;
+        }
       }
-      const isLt5M = file.size / 1024 / 1024 < 5;
-      if (!isLt5M) {
-        message.error('图片大小不能超过 5MB!');
-        return false;
-      }
-      setFileList([file]);
-      return false;
+      setFileList(list);
     },
     onRemove: () => {
       setFileList([]);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, Button, Tag, message, Tooltip } from 'antd';
@@ -18,25 +18,27 @@ import { addFavorite, removeFavorite, isFavorited } from '../services/favoriteSe
 import { useAuth } from '../hooks/useAuth';
 import DOMPurify from 'dompurify';
 
+import type { Image } from '../../shared/types';
+
 export default function ImageDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  const { data: image, isLoading, refetch } = useQuery({
+  const { data: image, isLoading, refetch } = useQuery<Image, Error>({
     queryKey: ['image', id],
     queryFn: () => getImage(id!),
     enabled: !!id,
-    onSuccess: (data) => {
-      // Increment view count when image is loaded
-      if (data) {
-        incrementViewCount(data.id);
-      }
-    },
   });
 
-  const { data: favorited } = useQuery({
+  useEffect(() => {
+    if (image?.id) {
+      incrementViewCount(image.id);
+    }
+  }, [image?.id]);
+
+  const { data: favorited } = useQuery<boolean, Error>({
     queryKey: ['favorite', id, user?.id],
     queryFn: () => isFavorited(id!, user!.id),
     enabled: !!id && !!user,

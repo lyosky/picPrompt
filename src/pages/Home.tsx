@@ -226,7 +226,7 @@ export default function Home() {
                         <span>{image.user.username}</span>
                       )}
                       {image.category && (
-                        <Tag size="small">{image.category.name}</Tag>
+                        <Tag className="m-0">{image.category.name}</Tag>
                       )}
                     </div>
                   </div>
