@@ -8,7 +8,8 @@ import {
   GlobalOutlined,
   LockOutlined,
   SearchOutlined,
-  FilterOutlined
+  FilterOutlined,
+  PictureOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getImages } from '../services/imageService';
@@ -111,6 +112,22 @@ export default function Home() {
               私有
             </Option>
           </Select>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            type="primary"
+            icon={<PictureOutlined />}
+            onClick={() => {
+              if (!user) {
+                message.warning('请先登录');
+                navigate('/login');
+                return;
+              }
+              navigate('/upload');
+            }}
+          >
+            上传图片
+          </Button>
         </div>
       </div>
 
