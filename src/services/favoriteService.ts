@@ -1,10 +1,21 @@
 import { supabase } from '../lib/supabase';
 import type { Favorite } from '../../shared/types';
 
-export async function addFavorite(imageId: string, userId: string): Promise<Favorite> {
+export async function addFavorite(imageId: string, _userId: string): Promise<Favorite> {
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) throw new Error('User not authenticated');
+  const u = auth.user;
+  const username = (u.user_metadata as any)?.username ?? (u.email?.split('@')[0] ?? 'user');
+  await supabase
+    .from('users')
+    .upsert(
+      { id: u.id, email: u.email ?? '', username, role: 'user' },
+      { onConflict: 'id' }
+    );
+
   const { data, error } = await supabase
     .from('favorites')
-    .insert({ image_id: imageId, user_id: userId })
+    .insert({ image_id: imageId, user_id: u.id })
     .select()
     .single();
 
