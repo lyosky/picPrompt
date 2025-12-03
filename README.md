@@ -90,11 +90,118 @@
 - 图床稳定性：模拟多文件上传、失败重试、超时与网络波动
 - 复制兼容性：Chrome、Firefox、Safari、Edge 验证
 
-## 部署指南（概览）
+## 部署指南
 
-- 前端：构建 `pnpm build`，部署至静态托管或 CDN
-- 后端：Node 服务部署（PM2/Docker），配置环境变量与持久化存储
-- 域名与 HTTPS：启用 HTTPS，配置跨域策略
+本专案支持多种部署方式，推荐使用 Vercel 进行一键全栈部署。
+
+### 方案一：Vercel 部署（推荐）
+
+本项目已配置 `vercel.json`，支持前端静态资源与后端 Serverless API 的一键部署。
+
+1. **准备工作**
+   - 将代码提交到 GitHub/GitLab/Bitbucket 仓库。
+   - 注册并登录 [Vercel](https://vercel.com)。
+
+2. **导入项目**
+   - 在 Vercel Dashboard 点击 "Add New..." -> "Project"。
+   - 选择你的 Git 仓库。
+
+3. **配置项目**
+   - **Framework Preset**: 选择 `Vite`。
+   - **Root Directory**: 保持默认 (`./`)。
+   - **Environment Variables**: 填入生产环境配置：
+     - `VITE_IMGBB_API_KEY`: 你的 ImgBB API Key
+     - `VITE_API_BASE_URL`: `/api` (因为 Vercel 会将后端部署在同域名的 /api 路径下)
+     - `SUPABASE_URL`: 你的 Supabase 项目 URL
+     - `SUPABASE_KEY`: 你的 Supabase Anon Key (或者 Service Role Key，视后端需求而定)
+     - `JWT_SECRET`: 用于签发 Token 的密钥
+
+4. **部署**
+   - 点击 "Deploy"。Vercel 会自动构建前端并部署后端 API。
+
+### 方案二：Docker 容器化部署
+
+如果你希望将前后端打包在一个容器中运行，可以使用以下 `Dockerfile`。
+
+1. **创建 Dockerfile**
+   在项目根目录创建名为 `Dockerfile` 的文件：
+
+   ```dockerfile
+   # Build Stage
+   FROM node:18-alpine as builder
+   WORKDIR /app
+   COPY package.json pnpm-lock.yaml ./
+   RUN npm install -g pnpm && pnpm install
+   COPY . .
+   RUN pnpm build
+
+   # Production Stage
+   FROM node:18-alpine
+   WORKDIR /app
+   
+   # 安装生产依赖（包含后端所需的 express 等）
+   COPY package.json pnpm-lock.yaml ./
+   RUN npm install -g pnpm && pnpm install --prod
+
+   # 复制构建产物
+   COPY --from=builder /app/dist ./dist
+   COPY --from=builder /app/api ./api
+   
+   # 暴露端口
+   EXPOSE 3000
+   
+   # 启动命令（需确保 api/server.ts 被编译或使用 tsx 运行，这里演示使用 tsx）
+   RUN npm install -g tsx
+   CMD ["tsx", "api/server.ts"]
+   ```
+
+   *注意：生产环境建议先将 TS 编译为 JS 再运行，上述 Dockerfile 为简化版。*
+
+2. **构建与运行**
+   ```bash
+   docker build -t picprompt .
+   docker run -p 3000:3000 --env-file .env picprompt
+   ```
+
+### 方案三：传统 Node.js 服务器部署
+
+适用于 VPS 或云服务器（如 Ubuntu/CentOS）。
+
+1. **环境准备**
+   - 安装 Node.js 18+
+   - 安装 PM2: `npm install -g pm2`
+
+2. **构建项目**
+   ```bash
+   # 安装依赖
+   pnpm install
+   
+   # 构建前端
+   pnpm build
+   ```
+
+3. **配置后端**
+   确保后端 `api/server.ts` 可以提供静态文件服务（需要修改代码以指向 `dist` 目录），或者使用 Nginx 反向代理。
+
+   **推荐 Nginx 方案：**
+   - Nginx 监听 80/443
+   - `/api` 转发给 `localhost:3000` (Node 后端)
+   - `/` 指向 `dist` 目录 (前端静态文件)
+
+4. **启动后端**
+   ```bash
+   pm2 start "tsx api/server.ts" --name picprompt-api
+   ```
+
+## 数据库迁移
+
+无论使用哪种部署方式，都需要确保 Supabase 数据库架构已更新。
+
+1. 在本地运行迁移（如果已安装 Supabase CLI）：
+   ```bash
+   supabase db push
+   ```
+2. 或者手动在 Supabase Dashboard 的 SQL Editor 中执行 `supabase/migrations` 目录下的 SQL 文件内容。
 
 ## 性能优化方向
 
