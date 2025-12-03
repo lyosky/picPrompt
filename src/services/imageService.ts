@@ -155,11 +155,7 @@ export async function deleteImage(id: string): Promise<void> {
 }
 
 export async function incrementViewCount(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('images')
-    .update({ view_count: supabase.rpc('increment_view_count', { image_id: id }) })
-    .eq('id', id);
-
+  const { error } = await supabase.rpc('increment_view_count', { image_id: id });
   if (error) {
     console.error('Failed to increment view count:', error);
   }

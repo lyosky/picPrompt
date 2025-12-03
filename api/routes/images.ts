@@ -182,10 +182,7 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
  */
 router.post('/:id/view', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('images')
-      .update({ view_count: supabase.rpc('increment_view_count', { image_id: req.params.id }) })
-      .eq('id', req.params.id);
+    const { error } = await supabase.rpc('increment_view_count', { image_id: req.params.id });
 
     if (error) {
       res.status(400).json({ error: error.message });
