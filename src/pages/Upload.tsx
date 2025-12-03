@@ -3,6 +3,7 @@ import { Upload, Button, Form, Input, Select, Switch, message } from 'antd';
 import { InboxOutlined, PictureOutlined } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd/es/upload';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { createImage } from '../services/imageService';
 import { getCategories } from '../services/categoryService';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +15,7 @@ const { Option } = Select;
 
 export default function UploadPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -24,6 +26,12 @@ export default function UploadPage() {
   });
 
   const handleUpload = async (values: any) => {
+    if (!user) {
+      message.error('请先登录后再上传');
+      navigate('/login');
+      return;
+    }
+
     if (fileList.length === 0) {
       message.error('请上传图片');
       return;
@@ -155,6 +163,7 @@ export default function UploadPage() {
                 type="primary"
                 htmlType="submit"
                 loading={uploading}
+                disabled={!user || uploading}
                 icon={<PictureOutlined />}
                 className="bg-blue-600 hover:bg-blue-700 border-blue-600"
               >
