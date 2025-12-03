@@ -30,6 +30,22 @@ export function useAuth() {
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ? toAppUser(session.user) : null);
+      if (session?.user) {
+        const u = session.user;
+        const username = (u.user_metadata as any)?.username ?? (u.email?.split('@')[0] ?? 'user');
+        supabase
+          .from('users')
+          .select('id')
+          .eq('id', u.id)
+          .single()
+          .then(({ data: profile, error: selError }) => {
+            if (!profile && !selError) {
+              supabase
+                .from('users')
+                .insert({ id: u.id, email: u.email ?? '', username, role: 'user' });
+            }
+          });
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -57,6 +73,23 @@ export function useAuth() {
     });
 
     if (error) throw error;
+    const uid = data.user?.id;
+    if (uid) {
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert(
+          {
+            id: uid,
+            email,
+            username,
+            role: 'user',
+          },
+          { onConflict: 'id' }
+        );
+      if (upsertError) {
+        console.error('Upsert users failed:', upsertError);
+      }
+    }
     return data;
   };
 
