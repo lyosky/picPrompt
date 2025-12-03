@@ -71,6 +71,9 @@ export async function createImage(request: CreateImageRequest): Promise<Image> {
   }
 
   // Then create image record in database
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) throw new Error('User not authenticated');
+
   const { data, error } = await supabase
     .from('images')
     .insert({
@@ -80,6 +83,7 @@ export async function createImage(request: CreateImageRequest): Promise<Image> {
       visibility: request.visibility,
       imgbb_url: imgbbData.data.url,
       imgbb_delete_url: imgbbData.data.delete_url,
+      user_id: userData.user.id
     })
     .select()
     .single();
