@@ -39,4 +39,9 @@ function App() {
           </Routes>
         </BrowserRouter>
       </ConfigProvider>
-      <ReactQueryDe
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}
+
+export default App;
