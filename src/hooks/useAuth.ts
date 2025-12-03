@@ -62,6 +62,7 @@ export function useAuth() {
   };
 
   const signUp = async (email: string, password: string, username: string) => {
+    const siteUrl = import.meta.env.VITE_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : undefined);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -69,6 +70,7 @@ export function useAuth() {
         data: {
           username,
         },
+        emailRedirectTo: siteUrl ? `${siteUrl}/` : undefined,
       },
     });
 
