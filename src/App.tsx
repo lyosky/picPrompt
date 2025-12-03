@@ -6,6 +6,7 @@ import zhCN from 'antd/locale/zh_CN';
 import Home from './pages/Home';
 import Upload from './pages/Upload';
 import ImageDetail from './pages/ImageDetail';
+import EditImage from './pages/EditImage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
@@ -30,6 +31,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/image/:id" element={<ImageDetail />} />
+            <Route path="/edit/:id" element={<EditImage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
