@@ -73,6 +73,22 @@ export async function createImage(request: CreateImageRequest): Promise<Image> {
   // Then create image record in database
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error('User not authenticated');
+  const u = userData.user;
+  const username = (u.user_metadata as any)?.username ?? (u.email?.split('@')[0] ?? 'user');
+  const { error: userUpsertError } = await supabase
+    .from('users')
+    .upsert(
+      {
+        id: u.id,
+        email: u.email ?? '',
+        username,
+        role: 'user',
+      },
+      { onConflict: 'id' }
+    );
+  if (userUpsertError) {
+    throw userUpsertError;
+  }
 
   const { data, error } = await supabase
     .from('images')

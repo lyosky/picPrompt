@@ -37,7 +37,7 @@ export function useAuth() {
           .from('users')
           .select('id')
           .eq('id', u.id)
-          .single()
+          .maybeSingle()
           .then(({ data: profile, error: selError }) => {
             if (!profile && !selError) {
               supabase
