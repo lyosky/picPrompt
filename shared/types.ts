@@ -62,4 +62,5 @@ export interface ImageFilters {
   visibility?: 'public' | 'private' | 'all';
   page?: number;
   limit?: number;
+  userId?: string;
 }

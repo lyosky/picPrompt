@@ -69,3 +69,25 @@ export async function getUserFavorites(userId: string): Promise<Favorite[]> {
 
   return data || [];
 }
+
+export async function getUserFavoritesPage(
+  userId: string,
+  from = 0,
+  to = 19
+): Promise<Favorite[]> {
+  const { data, error } = await supabase
+    .from('favorites')
+    .select(`
+      *,
+      image:images(*, user:users(id, username, avatar_url), category:categories(id, name))
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}

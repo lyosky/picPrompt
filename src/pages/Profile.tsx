@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Tabs, Card, Button, message } from 'antd';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
-import { getUserFavorites } from '../services/favoriteService';
-import { getImages } from '../services/imageService';
+import { getUserFavoritesPage } from '../services/favoriteService';
+import { getUserImagesPage } from '../services/imageService';
 import { useNavigate } from 'react-router-dom';
 import { HeartOutlined, PictureOutlined, UserOutlined } from '@ant-design/icons';
 
@@ -14,17 +14,67 @@ export default function Profile() {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('favorites');
 
-  const { data: favorites = [] } = useQuery({
-    queryKey: ['userFavorites', user?.id],
-    queryFn: () => getUserFavorites(user!.id),
+  const pageSize = 20;
+  const {
+    data: favoritesData,
+    fetchNextPage: fetchNextFavorites,
+    isFetchingNextPage: isFetchingNextFavorites,
+    hasNextPage: hasNextFavorites,
+  } = useInfiniteQuery({
+    queryKey: ['userFavoritesInfinite', user?.id],
     enabled: !!user,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => getUserFavoritesPage(user!.id, pageParam, pageParam + pageSize - 1),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === pageSize ? allPages.length * pageSize : undefined,
   });
 
-  const { data: userImages = [] } = useQuery({
-    queryKey: ['userImages', user?.id],
-    queryFn: () => getImages({}),
+  const {
+    data: userImagesData,
+    fetchNextPage: fetchNextImages,
+    isFetchingNextPage: isFetchingNextImages,
+    hasNextPage: hasNextImages,
+  } = useInfiniteQuery({
+    queryKey: ['userImagesInfinite', user?.id],
     enabled: !!user,
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => getUserImagesPage(user!.id, pageParam, pageParam + pageSize - 1),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === pageSize ? allPages.length * pageSize : undefined,
   });
+
+  const favorites = (favoritesData?.pages ?? []).flat();
+  const userImages = (userImagesData?.pages ?? []).flat();
+  const favoritesLoaderRef = useRef<HTMLDivElement | null>(null);
+  const uploadsLoaderRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (activeTab !== 'favorites') return;
+    const el = favoritesLoaderRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && hasNextFavorites && !isFetchingNextFavorites) {
+        fetchNextFavorites();
+      }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [activeTab, fetchNextFavorites, hasNextFavorites, isFetchingNextFavorites]);
+
+  useEffect(() => {
+    if (activeTab !== 'uploads') return;
+    const el = uploadsLoaderRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && hasNextImages && !isFetchingNextImages) {
+        fetchNextImages();
+      }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [activeTab, fetchNextImages, hasNextImages, isFetchingNextImages]);
 
   if (!user) {
     return (
@@ -106,6 +156,15 @@ export default function Profile() {
                 </div>
               ))}
             </div>
+            <div ref={favoritesLoaderRef} className="flex justify-center py-6">
+              {isFetchingNextFavorites ? (
+                <span className="text-gray-500">加载中...</span>
+              ) : hasNextFavorites === false ? (
+                <span className="text-gray-400">没有更多了</span>
+              ) : (
+                <span className="text-gray-300">下拉加载更多</span>
+              )}
+            </div>
             
             {favorites.length === 0 && (
               <div className="text-center py-12">
@@ -154,6 +213,15 @@ export default function Profile() {
                     </div>
                   </div>
                 ))}
+            </div>
+            <div ref={uploadsLoaderRef} className="flex justify-center py-6">
+              {isFetchingNextImages ? (
+                <span className="text-gray-500">加载中...</span>
+              ) : hasNextImages === false ? (
+                <span className="text-gray-400">没有更多了</span>
+              ) : (
+                <span className="text-gray-300">下拉加载更多</span>
+              )}
             </div>
             
             {userImages.filter((image) => image.user_id === user.id).length === 0 && (
