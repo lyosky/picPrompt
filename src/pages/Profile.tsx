@@ -52,29 +52,35 @@ export default function Profile() {
     if (activeTab !== 'favorites') return;
     const el = favoritesLoaderRef.current;
     if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      const [entry] = entries;
-      if (entry.isIntersecting && hasNextFavorites && !isFetchingNextFavorites) {
-        fetchNextFavorites();
-      }
-    });
+    const io = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isFetchingNextFavorites) {
+          fetchNextFavorites();
+        }
+      },
+      { root: null, rootMargin: '200px', threshold: 0 }
+    );
     io.observe(el);
     return () => io.disconnect();
-  }, [activeTab, fetchNextFavorites, hasNextFavorites, isFetchingNextFavorites]);
+  }, [activeTab, fetchNextFavorites, isFetchingNextFavorites]);
 
   useEffect(() => {
     if (activeTab !== 'uploads') return;
     const el = uploadsLoaderRef.current;
     if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      const [entry] = entries;
-      if (entry.isIntersecting && hasNextImages && !isFetchingNextImages) {
-        fetchNextImages();
-      }
-    });
+    const io = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isFetchingNextImages) {
+          fetchNextImages();
+        }
+      },
+      { root: null, rootMargin: '200px', threshold: 0 }
+    );
     io.observe(el);
     return () => io.disconnect();
-  }, [activeTab, fetchNextImages, hasNextImages, isFetchingNextImages]);
+  }, [activeTab, fetchNextImages, isFetchingNextImages]);
 
   if (!user) {
     return (
