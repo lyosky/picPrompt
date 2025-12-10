@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Tabs, Card, Button, message } from 'antd';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
-import { getUserFavoritesPage } from '../services/favoriteService';
-import { getUserImagesPage } from '../services/imageService';
+import { getUserFavoritesPage, getUserFavoritesCount } from '../services/favoriteService';
+import { getUserImagesPage, getUserImagesCount } from '../services/imageService';
 import { useNavigate } from 'react-router-dom';
 import { HeartOutlined, PictureOutlined, UserOutlined } from '@ant-design/icons';
 
@@ -47,6 +47,18 @@ export default function Profile() {
   const userImages = (userImagesData?.pages ?? []).flat();
   const favoritesLoaderRef = useRef<HTMLDivElement | null>(null);
   const uploadsLoaderRef = useRef<HTMLDivElement | null>(null);
+
+  const { data: favoritesTotal = 0 } = useQuery({
+    queryKey: ['favoritesTotal', user?.id],
+    queryFn: () => getUserFavoritesCount(user!.id),
+    enabled: !!user,
+  });
+
+  const { data: uploadsTotal = 0 } = useQuery({
+    queryKey: ['uploadsTotal', user?.id],
+    queryFn: () => getUserImagesCount(user!.id),
+    enabled: !!user,
+  });
 
   useEffect(() => {
     if (activeTab !== 'favorites') return;
@@ -131,7 +143,7 @@ export default function Profile() {
             tab={
               <span>
                 <HeartOutlined />
-                我的收藏 ({favorites.length})
+                我的收藏 ({favoritesTotal})
               </span>
             }
             key="favorites"
@@ -168,7 +180,7 @@ export default function Profile() {
               ) : hasNextFavorites === false ? (
                 <span className="text-gray-400">没有更多了</span>
               ) : (
-                <span className="text-gray-300">下拉加载更多</span>
+                <Button onClick={() => fetchNextFavorites()}>加载更多</Button>
               )}
             </div>
             
@@ -187,7 +199,7 @@ export default function Profile() {
             tab={
               <span>
                 <PictureOutlined />
-                我的上传 ({userImages.length})
+                我的上传 ({uploadsTotal})
               </span>
             }
             key="uploads"
@@ -226,7 +238,7 @@ export default function Profile() {
               ) : hasNextImages === false ? (
                 <span className="text-gray-400">没有更多了</span>
               ) : (
-                <span className="text-gray-300">下拉加载更多</span>
+                <Button onClick={() => fetchNextImages()}>加载更多</Button>
               )}
             </div>
             

@@ -91,3 +91,16 @@ export async function getUserFavoritesPage(
 
   return data || [];
 }
+
+export async function getUserFavoritesCount(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('favorites')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}

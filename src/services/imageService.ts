@@ -91,6 +91,19 @@ export async function getUserImagesPage(
   return data || [];
 }
 
+export async function getUserImagesCount(userId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('images')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
 export async function getImage(id: string): Promise<Image> {
   const { data, error } = await supabase
     .from('images')
