@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Card, Button, Tag, message, Tooltip } from 'antd';
+import { Card, Button, Tag, message, Tooltip, Modal } from 'antd';
 import { 
   EyeOutlined, 
   CopyOutlined, 
@@ -13,7 +13,7 @@ import {
   LockOutlined,
   ArrowLeftOutlined
 } from '@ant-design/icons';
-import { getImage, incrementViewCount } from '../services/imageService';
+import { getImage, incrementViewCount, deleteImage } from '../services/imageService';
 import { addFavorite, removeFavorite, isFavorited } from '../services/favoriteService';
 import { useAuth } from '../hooks/useAuth';
 import DOMPurify from 'dompurify';
@@ -98,6 +98,34 @@ export default function ImageDetail() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!user) {
+      message.error('请先登录');
+      navigate('/login');
+      return;
+    }
+    if (user.id !== image.user_id) {
+      message.error('无权限删除该图片');
+      return;
+    }
+    Modal.confirm({
+      title: '确认删除该图片？',
+      content: '删除后不可恢复，并会从 ImgBB 移除。',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await deleteImage(image.id);
+          message.success('已删除');
+          navigate('/');
+        } catch (e) {
+          message.error('删除失败，请重试');
+        }
+      },
+    });
+  };
+
   const sanitizeHtml = (html: string) => {
     return DOMPurify.sanitize(html);
   };
@@ -138,9 +166,7 @@ export default function ImageDetail() {
                 <Button
                   danger
                   icon={<DeleteOutlined />}
-                  onClick={() => {
-                    // Handle delete
-                  }}
+                  onClick={handleDelete}
                 >
                   删除
                 </Button>
