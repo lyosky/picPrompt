@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Card, Input, Select, Tag, Button, message, Tooltip } from 'antd';
 import { 
   CopyOutlined, 
@@ -12,7 +12,7 @@ import {
   PictureOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { getImages } from '../services/imageService';
+import { getImagesPage } from '../services/imageService';
 import { getCategories } from '../services/categoryService';
 import { useAuth } from '../hooks/useAuth';
 import { addFavorite } from '../services/favoriteService';
@@ -33,14 +33,45 @@ export default function Home() {
     queryFn: getCategories,
   });
 
-  const { data: images = [], isLoading } = useQuery({
-    queryKey: ['images', searchTerm, selectedCategory, visibilityFilter],
-    queryFn: () => getImages({
-      search: searchTerm,
-      category: selectedCategory,
-      visibility: visibilityFilter,
-    }),
+  const pageSize = 20;
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    isFetchingNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['imagesInfinite', searchTerm, selectedCategory, visibilityFilter],
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      getImagesPage(
+        {
+          search: searchTerm,
+          category: selectedCategory,
+          visibility: visibilityFilter,
+        },
+        pageParam,
+        pageParam + pageSize - 1
+      ),
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === pageSize ? allPages.length * pageSize : undefined,
   });
+
+  const images: Image[] = (data?.pages ?? []).flat();
+  const loaderRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = loaderRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const copyPrompt = async (prompt: string) => {
     try {
@@ -251,6 +282,15 @@ export default function Home() {
               />
             </Card>
           ))}
+          <div ref={loaderRef} className="col-span-full flex justify-center py-6">
+            {isFetchingNextPage ? (
+              <span className="text-gray-500">加载中...</span>
+            ) : hasNextPage === false ? (
+              <span className="text-gray-400">没有更多了</span>
+            ) : (
+              <span className="text-gray-300">下拉加载更多</span>
+            )}
+          </div>
         </div>
       )}
     </div>

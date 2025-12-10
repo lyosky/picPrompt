@@ -32,6 +32,41 @@ export async function getImages(filters: ImageFilters = {}): Promise<Image[]> {
   return data || [];
 }
 
+export async function getImagesPage(
+  filters: ImageFilters = {},
+  from = 0,
+  to = 19
+): Promise<Image[]> {
+  let query = supabase
+    .from('images')
+    .select(`
+      *,
+      user:users(id, username, avatar_url),
+      category:categories(id, name)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (filters.category) {
+    query = query.eq('category_id', filters.category);
+  }
+
+  if (filters.search) {
+    query = query.or(`title.ilike.%${filters.search}%,prompt.ilike.%${filters.search}%`);
+  }
+
+  if (filters.visibility && filters.visibility !== 'all') {
+    query = query.eq('visibility', filters.visibility);
+  }
+
+  const { data, error } = await query.range(from, to);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
 export async function getImage(id: string): Promise<Image> {
   const { data, error } = await supabase
     .from('images')
